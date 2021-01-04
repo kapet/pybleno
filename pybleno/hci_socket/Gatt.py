@@ -705,10 +705,14 @@ class Gatt:
             if handleProperties and ((handleProperties & 0x04) if withoutResponse else (handleProperties & 0x08)):
 
                 def create_callback(requestType, valueHandle, withoutResponse):
-                    def callback(result):
+                    def callback(result, data=b''):
                         if not withoutResponse:
                             if ATT_ECODE_SUCCESS == result:
-                                callbackResponse = array.array('B', [ATT_OP_WRITE_RESP])
+                                dataLength = min(len(data), self._mtu - 1)
+                                callbackResponse = array.array('B', [0] * (1+dataLength))
+                                callbackResponse[0] = ATT_OP_WRITE_RESP
+                                for i in range(0, dataLength):
+                                  callbackResponse[1 + i] = data[i]
                             else:
                                 callbackResponse = self.errorResponse(requestType, valueHandle, result)
 
